@@ -36,7 +36,7 @@ Stop the local server with Ctrl+C. The report is generated from the latest `targ
 
 ## GitHub Actions: daily run and Gmail reports
 
-The `.github/workflows/daily-tests.yml` workflow runs the suite daily at **09:00 Asia/Kolkata** and can also be started manually from GitHub's **Actions** tab. It runs headless on a GitHub-hosted Linux runner, emails a pass/fail summary with a link to the run, and saves the workbook and Allure files as downloadable workflow artifacts for 7 days. The email contains no attachments because Gmail blocked the report files; download the artifact from the linked run instead.
+The `.github/workflows/daily-tests.yml` workflow runs the suite daily at **09:00 Asia/Kolkata** and can also be started manually from GitHub's **Actions** tab. It runs headless on a GitHub-hosted Linux runner, publishes the latest static Allure report to GitHub Pages, and emails a pass/fail summary with the live report link. The workbook and raw results remain downloadable as workflow artifacts for 7 days. The email contains no attachments because Gmail blocked the report files.
 
 The GitHub repository shown during setup is **Public**, which means anyone can view the code after you push it. Standard GitHub-hosted Actions runners are free for public repositories. If you make the repository private, GitHub Free includes 2,000 Actions minutes per month; this Selenium suite's actual usage depends on how long each run takes. See [GitHub Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions) and [included usage](https://docs.github.com/en/billing/reference/product-usage-included).
 
@@ -64,7 +64,7 @@ Use the same app password you created for the GitLab variables if you want. Neve
 
 ### 3. Run once, then let the schedule run
 
-After pushing and saving the secrets, open **Actions → Daily Spinny UI tests → Run workflow** and start it on `main`. The workflow sends email even if tests fail, then marks the run failed so you can see the status. Open the run to inspect logs and download the `spinny-test-reports-*` artifact.
+Before the first run, open **Settings → Pages** and select **GitHub Actions** as the publishing source. Pages is publicly accessible for this public repository; anyone with the link can view the Allure report. Each successful report deployment updates the same site URL. After pushing and saving the secrets, open **Actions → Daily Spinny UI tests → Run workflow** and start it on `main`. The workflow sends email even if tests fail, then marks the run failed so you can see the status. Open the run to inspect logs and download the `spinny-test-reports-*` artifact for the workbook and raw results.
 
 GitHub runs scheduled workflows from the default branch and may delay them during busy periods. The schedule uses GitHub's IANA timezone support (`Asia/Kolkata`); see [workflow schedule events](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows).
 

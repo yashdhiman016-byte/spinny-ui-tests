@@ -61,9 +61,13 @@ def main() -> int:
             job_url = f"{server_url}/{repository}/actions/runs/{run_id}"
     if report_exists:
         body.append(
-            "The static Allure report and raw results are available in the run artifacts. "
-            "Download the artifact, then open target/site/allure-maven-plugin/index.html."
+            "The static Allure report was generated."
         )
+        pages_url = os.environ.get("GITHUB_PAGES_URL", "").strip()
+        if pages_url:
+            body.extend(["Live Allure report:", pages_url])
+        else:
+            body.append("The Allure site was not published; open the CI run to download its report artifact.")
     else:
         body.append("The Allure HTML report was not generated; check the CI job log and artifacts.")
 
