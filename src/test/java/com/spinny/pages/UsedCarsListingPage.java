@@ -160,9 +160,19 @@ public class UsedCarsListingPage {
         WebElement option = wait.until(d -> d.findElements(By.cssSelector("[data-componentname='FilterRadio'][data-id^='radio-']"))
                 .stream().filter(WebElement::isDisplayed)
                 .filter(e -> e.getText().matches("(?s).*20\\d{2}\\s*&\\s*above.*"))
-                .filter(e -> Integer.parseInt(e.getText().replaceAll("(?s).*?(20\\d{2}).*", "$1")) >= year)
-                .min(java.util.Comparator.comparingInt(e -> Integer.parseInt(e.getText().replaceAll("(?s).*?(20\\d{2}).*", "$1"))))
+                // Prefer the greatest available threshold at or below the request.
+                // This preserves the requested year when available and avoids
+                // accidentally narrowing 2023 to a 2024-and-above result set.
+                .filter(e -> Integer.parseInt(e.getText().replaceAll("(?s).*?(20\\d{2}).*", "$1")) <= year)
+                .max(java.util.Comparator.comparingInt(e -> Integer.parseInt(e.getText().replaceAll("(?s).*?(20\\d{2}).*", "$1"))))
                 .orElse(null));
+        if (option == null) {
+            option = wait.until(d -> d.findElements(By.cssSelector("[data-componentname='FilterRadio'][data-id^='radio-']"))
+                    .stream().filter(WebElement::isDisplayed)
+                    .filter(e -> e.getText().matches("(?s).*20\\d{2}\\s*&\\s*above.*"))
+                    .min(java.util.Comparator.comparingInt(e -> Integer.parseInt(e.getText().replaceAll("(?s).*?(20\\d{2}).*", "$1"))))
+                    .orElse(null));
+        }
         if (option == null) throw new IllegalStateException("No year filter option available for threshold " + year);
         int selectedYear = Integer.parseInt(option.getText().replaceAll("(?s).*?(20\\d{2}).*", "$1"));
         ((JavascriptExecutor) driver).executeScript("arguments[0].scrollIntoView({block:'center'});", option);
