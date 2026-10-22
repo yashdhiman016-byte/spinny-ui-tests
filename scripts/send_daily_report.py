@@ -5,39 +5,15 @@ from datetime import datetime
 from email.message import EmailMessage
 from pathlib import Path
 from zoneinfo import ZoneInfo
-import mimetypes
 import os
 import smtplib
 import sys
-import zipfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
 REPORT_DIR = ROOT / "target/site/allure-maven-plugin"
 RESULTS_DIR = ROOT / "test-results"
 WORKBOOK = RESULTS_DIR / "Spinny_Execution_Results.xlsx"
-REPORT_ZIP = RESULTS_DIR / "Allure-Report.zip"
-MAX_REPORT_ATTACHMENT_BYTES = 15 * 1024 * 1024
-
-
-def build_report_zip() -> bool:
-    if not REPORT_DIR.is_dir() or not any(REPORT_DIR.iterdir()):
-        return False
-
-    RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(REPORT_ZIP, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as archive:
-        for path in REPORT_DIR.rglob("*"):
-            if path.is_file():
-                archive.write(path, Path("Allure-Report") / path.relative_to(REPORT_DIR))
-    return True
-
-
-def attach_file(message: EmailMessage, path: Path) -> None:
-    content_type, _ = mimetypes.guess_type(path.name)
-    if content_type is None:
-        content_type = "application/octet-stream"
-    main_type, sub_type = content_type.split("/", 1)
-    message.add_attachment(path.read_bytes(), maintype=main_type, subtype=sub_type, filename=path.name)
 
 
 def main() -> int:
@@ -57,7 +33,7 @@ def main() -> int:
         "Test command exit code: 0" not in run_status
         or "Allure report command exit code: 0" not in run_status
     )
-    report_exists = build_report_zip()
+    report_exists = REPORT_DIR.is_dir() and any(REPORT_DIR.iterdir())
 
     message = EmailMessage()
     message["From"] = sender
@@ -71,10 +47,8 @@ def main() -> int:
         run_status,
         "",
     ]
-    attachments = []
     if WORKBOOK.is_file():
-        body.append("The latest Excel pass/fail workbook is attached.")
-        attachments.append(WORKBOOK)
+        body.append("The Excel pass/fail workbook is available in the run artifacts.")
     else:
         body.append("The Excel workbook was not generated.")
 
@@ -85,24 +59,18 @@ def main() -> int:
         run_id = os.environ.get("GITHUB_RUN_ID", "").strip()
         if repository and run_id:
             job_url = f"{server_url}/{repository}/actions/runs/{run_id}"
-    if report_exists and REPORT_ZIP.stat().st_size <= MAX_REPORT_ATTACHMENT_BYTES:
-        body.append("The complete static Allure report is attached as Allure-Report.zip.")
-        attachments.append(REPORT_ZIP)
-    elif report_exists:
+    if report_exists:
         body.append(
-            "The Allure report is too large for a Gmail attachment. "
-            "It is available in the CI job artifacts instead."
+            "The static Allure report and raw results are available in the run artifacts. "
+            "Download the artifact, then open target/site/allure-maven-plugin/index.html."
         )
-        if job_url:
-            body.extend(["", "Open the CI run and download its artifacts:", job_url])
     else:
         body.append("The Allure HTML report was not generated; check the CI job log and artifacts.")
-        if job_url:
-            body.extend(["", "CI run:", job_url])
+
+    if job_url:
+        body.extend(["", "Open the CI run to view logs and download artifacts:", job_url])
 
     message.set_content("\n".join(body))
-    for attachment in attachments:
-        attach_file(message, attachment)
 
     host = os.environ.get("GMAIL_SMTP_HOST", "smtp.gmail.com")
     port = int(os.environ.get("GMAIL_SMTP_PORT", "587"))

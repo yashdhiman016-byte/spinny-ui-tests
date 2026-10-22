@@ -36,7 +36,7 @@ Stop the local server with Ctrl+C. The report is generated from the latest `targ
 
 ## GitHub Actions: daily run and Gmail reports
 
-The `.github/workflows/daily-tests.yml` workflow runs the suite daily at **09:00 Asia/Kolkata** and can also be started manually from GitHub's **Actions** tab. It runs headless on a GitHub-hosted Linux runner, emails the Excel workbook and the Allure ZIP, and saves the report files as downloadable workflow artifacts for 7 days. If the ZIP exceeds the email attachment limit, the email links to that workflow run's artifacts.
+The `.github/workflows/daily-tests.yml` workflow runs the suite daily at **09:00 Asia/Kolkata** and can also be started manually from GitHub's **Actions** tab. It runs headless on a GitHub-hosted Linux runner, emails a pass/fail summary with a link to the run, and saves the workbook and Allure files as downloadable workflow artifacts for 7 days. The email contains no attachments because Gmail blocked the report files; download the artifact from the linked run instead.
 
 The GitHub repository shown during setup is **Public**, which means anyone can view the code after you push it. Standard GitHub-hosted Actions runners are free for public repositories. If you make the repository private, GitHub Free includes 2,000 Actions minutes per month; this Selenium suite's actual usage depends on how long each run takes. See [GitHub Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions) and [included usage](https://docs.github.com/en/billing/reference/product-usage-included).
 
@@ -70,7 +70,7 @@ GitHub runs scheduled workflows from the default branch and may delay them durin
 
 ## GitLab CI: daily run and Gmail reports
 
-This project includes `.gitlab-ci.yml`. It runs the tests in headless Chrome, generates Allure even if a test fails, and emails the Excel results plus a ZIP of the Allure site. The job also keeps the report files as GitLab artifacts for 30 days. The ZIP is attached when it is at most 15 MiB; if it is larger, the email includes the GitLab job link instead. Anyone opening that fallback link needs access to the GitLab project.
+This project includes `.gitlab-ci.yml`. It runs the tests in headless Chrome, generates Allure even if a test fails, and emails a pass/fail summary with a link to the CI run. Workbook and Allure files are kept as GitLab artifacts for 30 days. The email contains no attachments because Gmail blocked the report files; download the artifacts from the linked job instead. Anyone opening that link needs access to the GitLab project.
 
 The project must be on GitLab (or imported into GitLab) for `.gitlab-ci.yml` to run. Pushing only to GitHub will not run GitLab CI; you can keep a GitHub mirror separately if needed.
 
