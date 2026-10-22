@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "https://testng.org/testng-1.0.dtd">
+<suite name="Spinny used car journeys" verbose="1" parallel="false">
+    <listeners>
+        <listener class-name="com.spinny.framework.ExecutionReportListener"/>
+    </listeners>
+    <test name="City selection and filtered listings">
+        <classes>
+            <class name="com.spinny.tests.BuyCarCitySelectionTest"/>
+            <class name="com.spinny.tests.UsedCarFiltersAndDetailsTest"/>
+        </classes>
+    </test>
+</suite>

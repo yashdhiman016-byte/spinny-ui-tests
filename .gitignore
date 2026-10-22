@@ -1,0 +1,21 @@
+# Java/Maven build output
+/target/
+
+# Local developer toolchain and Maven dependency cache
+/.tools/
+/.allure/
+
+# Generated run artifacts (keep these in CI artifacts or deploy storage)
+/test-results/*.xlsx
+/test-results/*.zip
+/test-results/run-status.txt
+/allure-results/
+/allure-report/
+
+# IDE and operating system files
+.DS_Store
+.idea/
+*.iml
+.vscode/
+__pycache__/
+*.py[cod]

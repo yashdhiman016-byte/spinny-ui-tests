@@ -1,0 +1,42 @@
+image: maven:3.9.9-eclipse-temurin-17
+
+stages:
+  - daily-tests
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+  CHROME_BIN: "/usr/bin/chromium"
+
+cache:
+  key: "maven-${CI_COMMIT_REF_SLUG}"
+  paths:
+    - .m2/repository/
+
+spinny_daily_ui_tests:
+  stage: daily-tests
+  timeout: 45 minutes
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+  before_script:
+    - apt-get update
+    - apt-get install --yes --no-install-recommends chromium chromium-driver python3 ca-certificates
+  script:
+    - |
+      set +e
+      ./run-tests.sh -Dheadless=true
+      test_status=$?
+      python3 scripts/send_daily_report.py
+      email_status=$?
+
+      if [ "$test_status" -ne 0 ]; then
+        exit "$test_status"
+      fi
+      exit "$email_status"
+  artifacts:
+    when: always
+    expire_in: 30 days
+    paths:
+      - target/site/allure-maven-plugin/
+      - target/allure-results/
+      - test-results/
