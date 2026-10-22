@@ -1,0 +1,78 @@
+name: Daily Spinny UI tests
+
+on:
+  schedule:
+    - cron: '0 9 * * *'
+      timezone: Asia/Kolkata
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  run-ui-tests:
+    name: Run UI tests and email reports
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Run tests and generate Allure report
+        id: tests
+        continue-on-error: true
+        run: |
+          set +e
+          ./run-tests.sh -Dheadless=true
+          test_status=$?
+          echo "exit_code=$test_status" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Email workbook and Allure report
+        id: email
+        if: always()
+        continue-on-error: true
+        env:
+          GMAIL_FROM: ${{ secrets.GMAIL_FROM }}
+          GMAIL_TO: ${{ secrets.GMAIL_TO }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GITHUB_SERVER_URL: ${{ github.server_url }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: python3 scripts/send_daily_report.py
+
+      - name: Save reports as downloadable artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spinny-test-reports-${{ github.run_number }}
+          path: |
+            target/site/allure-maven-plugin/
+            target/allure-results/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Mark workflow failed if tests or email failed
+        if: always()
+        env:
+          TEST_OUTCOME: ${{ steps.tests.outcome }}
+          TEST_EXIT_CODE: ${{ steps.tests.outputs.exit_code }}
+          EMAIL_OUTCOME: ${{ steps.email.outcome }}
+        run: |
+          if [ "$TEST_OUTCOME" != "success" ] || [ "$TEST_EXIT_CODE" != "0" ]; then
+            echo "UI test run failed (exit code: ${TEST_EXIT_CODE:-not recorded})."
+            exit 1
+          fi
+          if [ "$EMAIL_OUTCOME" != "success" ]; then
+            echo "Report email failed. Check that the three Gmail repository secrets are configured."
+            exit 1
+          fi

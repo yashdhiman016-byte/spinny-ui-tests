@@ -34,6 +34,40 @@ The static Allure report is generated at `target/site/allure-maven-plugin/index.
 
 Stop the local server with Ctrl+C. The report is generated from the latest `target/allure-results` files.
 
+## GitHub Actions: daily run and Gmail reports
+
+The `.github/workflows/daily-tests.yml` workflow runs the suite daily at **09:00 Asia/Kolkata** and can also be started manually from GitHub's **Actions** tab. It runs headless on a GitHub-hosted Linux runner, emails the Excel workbook and the Allure ZIP, and saves the report files as downloadable workflow artifacts for 7 days. If the ZIP exceeds the email attachment limit, the email links to that workflow run's artifacts.
+
+The GitHub repository shown during setup is **Public**, which means anyone can view the code after you push it. Standard GitHub-hosted Actions runners are free for public repositories. If you make the repository private, GitHub Free includes 2,000 Actions minutes per month; this Selenium suite's actual usage depends on how long each run takes. See [GitHub Actions billing](https://docs.github.com/en/billing/concepts/product-billing/github-actions) and [included usage](https://docs.github.com/en/billing/reference/product-usage-included).
+
+### 1. Push this existing project to the new GitHub repository
+
+Keep `origin` pointed at GitLab and add GitHub as a second remote:
+
+```bash
+cd ~/Desktop/SPINNY
+git remote add github https://github.com/yashdhiman016-byte/spinny-ui-tests.git
+git push -u github main
+```
+
+If Git says the `github` remote already exists, check it with `git remote -v`; if its URL is wrong, update it with `git remote set-url github https://github.com/yashdhiman016-byte/spinny-ui-tests.git` and retry the push. Do not add GitHub as `origin`, because `origin` is already your GitLab remote.
+
+### 2. Add Gmail secrets on GitHub
+
+Open the repository's **Settings → Secrets and variables → Actions → New repository secret** and add:
+
+- `GMAIL_FROM`: the Gmail account used to send the email.
+- `GMAIL_TO`: the recipient email address (commas are supported for multiple recipients).
+- `GMAIL_APP_PASSWORD`: a Google app password, not your regular Gmail password.
+
+Use the same app password you created for the GitLab variables if you want. Never put these values in a file or commit them to Git. Google requires 2-Step Verification for app passwords; see [Google's instructions](https://support.google.com/mail/answer/185833?hl=en).
+
+### 3. Run once, then let the schedule run
+
+After pushing and saving the secrets, open **Actions → Daily Spinny UI tests → Run workflow** and start it on `main`. The workflow sends email even if tests fail, then marks the run failed so you can see the status. Open the run to inspect logs and download the `spinny-test-reports-*` artifact.
+
+GitHub runs scheduled workflows from the default branch and may delay them during busy periods. The schedule uses GitHub's IANA timezone support (`Asia/Kolkata`); see [workflow schedule events](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows).
+
 ## GitLab CI: daily run and Gmail reports
 
 This project includes `.gitlab-ci.yml`. It runs the tests in headless Chrome, generates Allure even if a test fails, and emails the Excel results plus a ZIP of the Allure site. The job also keeps the report files as GitLab artifacts for 30 days. The ZIP is attached when it is at most 15 MiB; if it is larger, the email includes the GitLab job link instead. Anyone opening that fallback link needs access to the GitLab project.
@@ -94,4 +128,5 @@ To test it immediately after setting the variables and bringing the runner onlin
 - `src/test/java/com/spinny/tests`: independent journey tests.
 - `test-results/Spinny_Execution_Results.xlsx`: refreshed execution results workbook.
 - `.gitlab-ci.yml`: scheduled/manual CI job and report artifacts.
+- `.github/workflows/daily-tests.yml`: scheduled/manual GitHub Actions job and report artifacts.
 - `scripts/send_daily_report.py`: Gmail SMTP report delivery; credentials are read only from environment variables.

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Email the latest Spinny test workbook and Allure report from GitLab CI."""
+"""Email the latest Spinny test workbook and Allure report from CI."""
 
 from datetime import datetime
 from email.message import EmailMessage
@@ -48,7 +48,7 @@ def main() -> int:
         ("GMAIL_FROM", sender), ("GMAIL_TO", recipients), ("GMAIL_APP_PASSWORD", app_password)
     ) if not value]
     if missing:
-        print("Missing GitLab CI/CD variables: " + ", ".join(missing), file=sys.stderr)
+        print("Missing CI secrets/variables: " + ", ".join(missing), file=sys.stderr)
         return 2
 
     status_file = RESULTS_DIR / "run-status.txt"
@@ -78,20 +78,26 @@ def main() -> int:
         body.append("The Excel workbook was not generated.")
 
     job_url = os.environ.get("CI_JOB_URL", "").strip()
+    if not job_url:
+        server_url = os.environ.get("GITHUB_SERVER_URL", "https://github.com").rstrip("/")
+        repository = os.environ.get("GITHUB_REPOSITORY", "").strip()
+        run_id = os.environ.get("GITHUB_RUN_ID", "").strip()
+        if repository and run_id:
+            job_url = f"{server_url}/{repository}/actions/runs/{run_id}"
     if report_exists and REPORT_ZIP.stat().st_size <= MAX_REPORT_ATTACHMENT_BYTES:
         body.append("The complete static Allure report is attached as Allure-Report.zip.")
         attach_file(message, REPORT_ZIP)
     elif report_exists:
         body.append(
             "The Allure report is too large for a Gmail attachment. "
-            "It is available in the GitLab job artifacts instead."
+            "It is available in the CI job artifacts instead."
         )
         if job_url:
-            body.extend(["", "Open the job and download/browse its artifacts:", job_url])
+            body.extend(["", "Open the CI run and download its artifacts:", job_url])
     else:
-        body.append("The Allure HTML report was not generated; check the GitLab job log and artifacts.")
+        body.append("The Allure HTML report was not generated; check the CI job log and artifacts.")
         if job_url:
-            body.extend(["", "GitLab job:", job_url])
+            body.extend(["", "CI run:", job_url])
 
     message.set_content("\n".join(body))
     host = os.environ.get("GMAIL_SMTP_HOST", "smtp.gmail.com")
