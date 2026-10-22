@@ -1,11 +1,10 @@
-image: maven:3.9.9-eclipse-temurin-17
-
 stages:
   - daily-tests
 
 variables:
   MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
-  CHROME_BIN: "/usr/bin/chromium"
+  # GitLab Runner is registered on the user's macOS machine with the shell executor.
+  CHROME_BIN: "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
 cache:
   key: "maven-${CI_COMMIT_REF_SLUG}"
@@ -14,13 +13,12 @@ cache:
 
 spinny_daily_ui_tests:
   stage: daily-tests
+  tags:
+    - macos-local
   timeout: 45 minutes
   rules:
     - if: '$CI_PIPELINE_SOURCE == "schedule"'
     - if: '$CI_PIPELINE_SOURCE == "web"'
-  before_script:
-    - apt-get update
-    - apt-get install --yes --no-install-recommends chromium chromium-driver python3 ca-certificates
   script:
     - |
       set +e

@@ -36,9 +36,9 @@ Stop the local server with Ctrl+C. The report is generated from the latest `targ
 
 ## GitLab CI: daily run and Gmail reports
 
-This project now includes `.gitlab-ci.yml`. It runs the tests in headless Chromium, generates Allure even if a test fails, and emails the Excel results plus a ZIP of the Allure site. The job also keeps the report files as GitLab artifacts for 30 days. The ZIP is attached when it is at most 15 MiB; if it is larger, the email includes the GitLab job link instead. Anyone opening that fallback link needs access to the GitLab project.
+This project includes `.gitlab-ci.yml`. It runs the tests in headless Chrome, generates Allure even if a test fails, and emails the Excel results plus a ZIP of the Allure site. The job also keeps the report files as GitLab artifacts for 30 days. The ZIP is attached when it is at most 15 MiB; if it is larger, the email includes the GitLab job link instead. Anyone opening that fallback link needs access to the GitLab project.
 
-The project must be on GitLab (or imported into GitLab) for `.gitlab-ci.yml` to run. Pushing only to GitHub will not run GitLab CI; you can keep a GitHub mirror separately if needed. This workspace is not initialized as a Git repository yet.
+The project must be on GitLab (or imported into GitLab) for `.gitlab-ci.yml` to run. Pushing only to GitHub will not run GitLab CI; you can keep a GitHub mirror separately if needed.
 
 ### 1. Push the project to GitLab
 
@@ -53,7 +53,21 @@ git remote add origin https://gitlab.com/YOUR-NAME/YOUR-PROJECT.git
 git push -u origin main
 ```
 
-Use an enabled Linux Docker runner for the project; the job image installs Chromium with `apt`.
+This pipeline is configured for a **self-managed macOS shell runner** tagged `macos-local`. Install Java 17, Maven 3.9+, Python 3, and Google Chrome on the Mac, then install and register GitLab Runner. Keep the Mac awake and connected while a scheduled run is due. Chrome must be installed at `/Applications/Google Chrome.app/Contents/MacOS/Google Chrome` (or update `CHROME_BIN` in `.gitlab-ci.yml`).
+
+Runner setup:
+
+1. In GitLab, open **Project → Settings → CI/CD → Runners**, create a project runner, and set its tag to `macos-local`. Copy the runner authentication token; do not share or commit it.
+2. On the Mac, install the runner and register it. When asked for the executor, choose `shell`:
+
+   ```bash
+   brew install gitlab-runner maven
+   gitlab-runner register --url https://gitlab.com --token 'PASTE-RUNNER-TOKEN-HERE'
+   ```
+
+   Start the registered runner with `brew services start gitlab-runner`. Confirm it appears **online** in the project's Runners settings. Keep the Mac awake; shell jobs run directly as the runner's user.
+
+3. Verify the runner account can find `java`, `mvn`, `python3`, and Chrome. GitLab's macOS runner setup recommends Bash for shell executor jobs; use Bash for the runner shell.
 
 `.gitignore` excludes the local Maven/JDK cache, build output, Allure cache, and generated workbooks. Those tool and report files are rebuilt by CI and retained as job artifacts.
 
@@ -69,9 +83,9 @@ Google requires 2-Step Verification before it allows an app password. Create one
 
 ### 3. Create the daily schedule
 
-In GitLab, open **Build → Pipeline schedules → New schedule**. Select the `main` branch, set the interval to `0 9 * * *`, and set its timezone to `Asia/Kolkata`. Save and activate it. If the timezone selector is unavailable, use `30 3 * * *` with UTC. GitLab schedules can start later than the requested minute when the runner is busy.
+In GitLab, open **Build → Pipeline schedules → New schedule**. Select the `main` branch, set the interval to `0 9 * * *`, and set its timezone to `Asia/Kolkata`. Save and activate it. If the timezone selector is unavailable, use `30 3 * * *` with UTC. GitLab schedules and runner availability can delay the actual start.
 
-To test it immediately after setting the variables, open **Build → Pipelines → New pipeline** and run the `main` branch. The same job is available to scheduled and manually started pipelines. Check its job page for logs/artifacts and the Gmail inbox for the email.
+To test it immediately after setting the variables and bringing the runner online, open **Build → Pipelines → New pipeline** and run the `main` branch. The same job is available to scheduled and manually started pipelines. Check its job page for logs/artifacts and the Gmail inbox for the email. A temporary schedule for five minutes from now is not guaranteed to start at that exact time; use the schedule's **Run** action for an immediate test, then edit the schedule to the daily time.
 
 ## Structure
 
