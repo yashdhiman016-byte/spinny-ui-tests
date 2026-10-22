@@ -71,9 +71,10 @@ def main() -> int:
         run_status,
         "",
     ]
+    attachments = []
     if WORKBOOK.is_file():
         body.append("The latest Excel pass/fail workbook is attached.")
-        attach_file(message, WORKBOOK)
+        attachments.append(WORKBOOK)
     else:
         body.append("The Excel workbook was not generated.")
 
@@ -86,7 +87,7 @@ def main() -> int:
             job_url = f"{server_url}/{repository}/actions/runs/{run_id}"
     if report_exists and REPORT_ZIP.stat().st_size <= MAX_REPORT_ATTACHMENT_BYTES:
         body.append("The complete static Allure report is attached as Allure-Report.zip.")
-        attach_file(message, REPORT_ZIP)
+        attachments.append(REPORT_ZIP)
     elif report_exists:
         body.append(
             "The Allure report is too large for a Gmail attachment. "
@@ -100,6 +101,9 @@ def main() -> int:
             body.extend(["", "CI run:", job_url])
 
     message.set_content("\n".join(body))
+    for attachment in attachments:
+        attach_file(message, attachment)
+
     host = os.environ.get("GMAIL_SMTP_HOST", "smtp.gmail.com")
     port = int(os.environ.get("GMAIL_SMTP_PORT", "587"))
     with smtplib.SMTP(host, port, timeout=30) as smtp:
