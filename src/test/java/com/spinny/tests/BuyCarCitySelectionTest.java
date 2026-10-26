@@ -21,6 +21,7 @@ public class BuyCarCitySelectionTest extends BaseTest {
 
     @DataProvider(name = "cities")
     public Object[][] cities() {
+        // A -Dcity=... property runs one city; otherwise cover the configured city set.
         String selectedCity = System.getProperty("city");
         if (selectedCity != null && !selectedCity.isBlank()) {
             return new Object[][] {{selectedCity}};
@@ -34,6 +35,7 @@ public class BuyCarCitySelectionTest extends BaseTest {
 
     @Test(dataProvider = "cities")
     public void buyCarOpensListingsForCity(String city) {
+            // This scenario checks the user journey from the home page to a city's inventory.
             WebDriverWait wait = new WebDriverWait(driver, WAIT_TIMEOUT);
             ScenarioReportData.put("Scenario", "Buy car city selection: " + city);
             ScenarioReportData.put("Selected city", city);
@@ -57,6 +59,7 @@ public class BuyCarCitySelectionTest extends BaseTest {
             try {
                 cityRipple.click();
             } catch (ElementClickInterceptedException intercepted) {
+                // The site's visual ripple can intercept a normal click; JS is a fallback.
                 ((JavascriptExecutor) driver).executeScript("arguments[0].click();", cityRipple);
             }
 
@@ -64,6 +67,7 @@ public class BuyCarCitySelectionTest extends BaseTest {
                 wait.until(d -> !d.getCurrentUrl().equals(selectorUrl)
                         && d.getCurrentUrl().contains("used-cars"));
             } catch (org.openqa.selenium.TimeoutException timeout) {
+                // Preserve useful page diagnostics in CI logs before failing the test.
                 System.err.println("City selection did not navigate. URL: " + driver.getCurrentUrl());
                 System.err.println("Visible page text: " + driver.findElement(By.tagName("body")).getText());
                 throw timeout;
@@ -88,6 +92,7 @@ public class BuyCarCitySelectionTest extends BaseTest {
             System.out.println("First " + Math.min(3, listings.size()) + " cars:");
             List<String> displayedCars = new ArrayList<>();
             for (int index = 0; index < Math.min(5, listings.size()); index++) {
+                // Capture a small sample for console output and the Excel execution report.
                 WebElement listing = listings.get(index);
                 String title = listing.findElement(By.cssSelector("h3[data-base-component='heading']"))
                         .getText().trim();

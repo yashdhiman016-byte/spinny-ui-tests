@@ -25,6 +25,7 @@ public class UsedCarsListingPage {
     }
 
     public void waitUntilLoaded() {
+        // Wait for both the filter panel and listing container before interacting.
         wait.until(ExpectedConditions.visibilityOfElementLocated(filters));
         wait.until(ExpectedConditions.visibilityOfElementLocated(By.cssSelector("[data-id='landing-plp-container']")));
     }
@@ -49,6 +50,7 @@ public class UsedCarsListingPage {
     }
 
     public void selectMake(String make, String searchText) {
+        // Search first to make the target option easier to find in a long filter list.
         searchFor(searchText == null || searchText.isBlank() ? make : searchText);
         String id = "make-" + slug(make);
         By rowBy = By.cssSelector("[data-id='" + id + "']");
@@ -93,6 +95,7 @@ public class UsedCarsListingPage {
 
     /** Move range handles to the closest supported currency values and return the values shown. */
     public String setBudgetRange(int minimumRupees, int maximumRupees) {
+        // The site offers discrete slider values, so report the values actually selected.
         List<WebElement> handles = wait.until(d -> {
             List<WebElement> found = d.findElements(By.cssSelector("[data-componentname='BudgetDesktop'] input[type='range']"));
             return found.size() >= 2 ? found : null;
@@ -115,6 +118,7 @@ public class UsedCarsListingPage {
     }
 
     private void moveToBudgetValue(boolean minimumHandle, int requested) {
+        // Step through supported slider values and choose the closest value to the request.
         By inputBy = By.cssSelector("[data-componentname='BudgetDesktop'] input[type='range']:" +
                 (minimumHandle ? "first-of-type" : "last-of-type"));
         Keys endpoint = minimumHandle ? Keys.HOME : Keys.END;
@@ -157,6 +161,7 @@ public class UsedCarsListingPage {
     }
 
     public int selectYearAtLeast(int year) {
+        // Choose the closest available "year and above" option and return its real threshold.
         WebElement option = wait.until(d -> d.findElements(By.cssSelector("[data-componentname='FilterRadio'][data-id^='radio-']"))
                 .stream().filter(WebElement::isDisplayed)
                 .filter(e -> e.getText().matches("(?s).*20\\d{2}\\s*&\\s*above.*"))
@@ -184,6 +189,7 @@ public class UsedCarsListingPage {
     public List<String> waitForCars() { return visibleCarTitles(); }
 
     public List<WebElement> visibleCars() {
+        // Re-query cards inside the wait because the page can rerender after applying filters.
         return wait.until(d -> {
             try {
                 List<WebElement> found = d.findElements(cards).stream().filter(WebElement::isDisplayed)
@@ -233,6 +239,7 @@ public class UsedCarsListingPage {
     }
 
     public String openFirstCar() {
+        // Click the card's detail link when available, then wait for navigation to complete.
         WebElement card = visibleCars().get(0);
         String prior = driver.getCurrentUrl();
         List<WebElement> overlays = card.findElements(By.cssSelector(".ds-absolute.ds-overflow-hidden.ds-interactive[role='none']"));

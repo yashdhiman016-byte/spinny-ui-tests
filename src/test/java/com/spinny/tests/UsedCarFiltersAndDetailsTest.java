@@ -14,6 +14,7 @@ import java.util.List;
 public class UsedCarFiltersAndDetailsTest extends BaseTest {
     @DataProvider(name = "filterCases")
     public Object[][] filterCases() {
+        // TestNG runs each row as a separate test invocation with its own browser lifecycle.
         return new Object[][] {
                 {"budget", "₹16L–₹40L", 16_00_000, 40_00_000},
                 {"budget", "₹5L–₹14L", 5_00_000, 14_00_000},
@@ -30,6 +31,7 @@ public class UsedCarFiltersAndDetailsTest extends BaseTest {
 
     @Test(dataProvider = "filterCases")
     public void applySingleFilterAndPrintCarDetails(String filterType, String value, int first, int second) {
+        // Keep the listing URL configurable so the same test can target another city.
         driver.get(System.getProperty("listing.url", "https://www.spinny.com/used-cars-in-delhi-ncr/s/"));
         UsedCarsListingPage listing = new UsedCarsListingPage(driver);
         listing.waitUntilLoaded();
@@ -37,6 +39,7 @@ public class UsedCarFiltersAndDetailsTest extends BaseTest {
         ScenarioReportData.put("Filter applied", "Requested " + filterType + " = " + value);
 
         String applied;
+        // Dispatch to the matching Page Object action; the test focuses on outcomes.
         if (filterType.equals("budget")) {
             String selectedRange = listing.setBudgetRange(first, second);
             applied = "Budget requested ₹" + String.format("%,d", first) + "–₹" + String.format("%,d", second)
@@ -54,6 +57,7 @@ public class UsedCarFiltersAndDetailsTest extends BaseTest {
         }
 
         List<String> titles = listing.waitForCars();
+        // Validate that the filter produced usable listings before opening one.
         Assert.assertFalse(titles.isEmpty(), "Expected cars after applying " + applied);
         String firstPrice = listing.firstCarPrice();
         ScenarioReportData.put("Scenario", filterType + " filter: " + value);
@@ -66,6 +70,7 @@ public class UsedCarFiltersAndDetailsTest extends BaseTest {
         Assert.assertFalse(firstPrice.isBlank(), "First result should show a price for " + applied);
 
         String detailUrl = listing.openFirstCar();
+        // Verify the end-to-end journey from filtered listing to a car detail page.
         CarDetailsPage details = new CarDetailsPage(driver);
         details.waitUntilLoaded();
         String detailTitle = details.title();

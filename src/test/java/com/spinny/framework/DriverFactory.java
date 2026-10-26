@@ -10,6 +10,7 @@ public final class DriverFactory {
     private DriverFactory() {}
 
     public static WebDriver create() {
+        // Return the interface type so tests depend on WebDriver, not ChromeDriver.
         String browser = System.getProperty("browser", "chrome");
         if (!browser.equalsIgnoreCase("chrome")) {
             throw new IllegalArgumentException("Unsupported browser: " + browser + " (currently chrome)");
@@ -21,6 +22,7 @@ public final class DriverFactory {
             options.setBinary(chromeBinary);
         }
         if (Boolean.parseBoolean(System.getProperty("headless", "false"))) {
+            // CI runs without a display; --no-sandbox is enabled only for CI containers.
             options.addArguments("--headless=new", "--disable-dev-shm-usage");
             if ("true".equalsIgnoreCase(System.getenv("CI"))) {
                 options.addArguments("--no-sandbox");

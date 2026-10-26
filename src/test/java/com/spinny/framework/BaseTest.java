@@ -8,6 +8,7 @@ import org.testng.ITestResult;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 
+/** Shared TestNG fixture: each test gets a browser and always attempts cleanup. */
 public abstract class BaseTest {
     protected WebDriver driver;
 
@@ -15,12 +16,14 @@ public abstract class BaseTest {
 
     @BeforeMethod
     public void startBrowser() {
+        // TestNG calls this before each test method, keeping browser state isolated.
         driver = DriverFactory.create();
     }
 
     @AfterMethod(alwaysRun = true)
     public void stopBrowser(ITestResult result) {
         if (driver != null) {
+            // Attach evidence before closing the browser, including for failed tests.
             String screenshotName = result.getMethod().getMethodName() + "-"
                     + (result.isSuccess() ? "PASS" : result.getStatus() == ITestResult.SKIP ? "SKIP" : "FAIL") + ".png";
             try {

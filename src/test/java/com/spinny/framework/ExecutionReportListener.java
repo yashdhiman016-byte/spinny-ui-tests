@@ -31,6 +31,7 @@ public class ExecutionReportListener implements ITestListener, ISuiteListener {
     private static volatile String runTimestamp;
 
     @Override public void onStart(ISuite suite) {
+        // Start a fresh in-memory report for this suite and use the project reporting timezone.
         ROWS.clear();
         runTimestamp = ZonedDateTime.now(ZoneId.of("Asia/Kolkata")).format(RUN_FORMAT);
         ScenarioReportData.clear();
@@ -42,6 +43,7 @@ public class ExecutionReportListener implements ITestListener, ISuiteListener {
     @Override public void onTestSkipped(ITestResult result) { finish(result, "SKIP"); }
 
     private void finish(ITestResult result, String status) {
+        // TestNG calls this for pass/fail/skip; take a snapshot before the next test clears data.
         ScenarioReportData.put("Scenario", result.getMethod().getDescription());
         String screenshotName = result.getMethod().getMethodName() + "-" + status + ".png";
         Map<String, String> data = ScenarioReportData.snapshot();
@@ -63,6 +65,7 @@ public class ExecutionReportListener implements ITestListener, ISuiteListener {
     }
 
     private void writeWorkbook(Path path) throws IOException {
+        // Preserve unrelated workbook sheets while replacing this run's execution sheet.
         Files.createDirectories(path.toAbsolutePath().getParent());
         try (Workbook workbook = Files.exists(path)
                 ? WorkbookFactory.create(path.toFile())
@@ -89,6 +92,7 @@ public class ExecutionReportListener implements ITestListener, ISuiteListener {
                 String[] values = rows.get(r).values();
                 for (int c = 0; c < values.length; c++) row.createCell(c).setCellValue(values[c]);
             }
+            // Keep the sheet easy to filter and read when opened in Excel.
             sheet.setAutoFilter(new org.apache.poi.ss.util.CellRangeAddress(0, rows.size(), 0, COLUMNS.length - 1));
             for (int c = 0; c < COLUMNS.length; c++) sheet.setColumnWidth(c, Math.min(14000, Math.max(3500, COLUMNS[c].length() * 280)));
             try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
